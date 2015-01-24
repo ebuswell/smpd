@@ -1,6 +1,8 @@
 LIBRARY_NAME = sonicmaths
 
-SOURCES = smcos~.c
+SOURCES = smbandpass~.c smcos~.c smenvg~.c smhighpass~.c smintg~.c \
+	  smitrain~.c smkey~.c smlimit~.c smlowpass~.c smnoise~.c smnotch~.c \
+	  smverb~.c
 
 SHARED_SOURCES =
 

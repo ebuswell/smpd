@@ -15,24 +15,24 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/cosine.h>
+#include <sonicmaths/impulse-train.h>
 #include "m_pd.h"
 
 typedef struct {
 	t_object o;
 	t_sample zero;
 	struct smosc osc;
-} t_smcos;
+} t_smitrain;
 
-t_class *smcos_class;
+t_class *smitrain_class;
 
-static void *smcos_new(t_symbol *s __attribute__((unused)), int argc, t_atom *argv) {
-	t_smcos *x = (t_smcos *) pd_new(smcos_class);
+static void *smitrain_new(t_symbol *s __attribute__((unused)), int argc, t_atom *argv) {
+	t_smitrain *x = (t_smitrain *) pd_new(smitrain_class);
 	smosc_init(&x->osc);
 	if (argc > 0) {
 		smosc_set_phase(&x->osc, (double) atom_getfloat(argv));
 		if (argc > 1) {
-			error("smcos~ takes only one argument."
+			error("smitrain~ takes only one argument."
 			      " Ignoring subsequent arguments.");
 		}
 	}
@@ -42,37 +42,38 @@ static void *smcos_new(t_symbol *s __attribute__((unused)), int argc, t_atom *ar
 	return x;
 }
 
-static void smcos_free(t_smcos *x) {
+static void smitrain_free(t_smitrain *x) {
 	smosc_destroy(&x->osc);
 }
 
-static t_int *smcos_perform(t_int *w) {
-	t_smcos *x = (t_smcos *) w[1];
+static t_int *smitrain_perform(t_int *w) {
+	t_smitrain *x = (t_smitrain *) w[1];
 	t_sample *freq = (t_sample *) w[2];
 	t_sample *phase = (t_sample *) w[3];
 	t_sample *out = (t_sample *) w[4];
 	t_int n = w[5];
 
 	while (n--) {
-		*out++ = smcos(&x->osc, *freq++, *phase++);
+		*out++ = smitrain(&x->osc, *freq++, *phase++);
 	}
 
 	return w + 6;
 }
 
-static void smcos_dsp(t_smcos *x, t_signal **sp) {
-	dsp_add(smcos_perform, 5,
+static void smitrain_dsp(t_smitrain *x, t_signal **sp) {
+	dsp_add(smitrain_perform, 5,
 		x, sp[0]->s_vec, sp[1]->s_vec, sp[2]->s_vec, sp[0]->s_n);
 }
 
-void smcos_tilde_setup() {
-	smcos_class = class_new(gensym("smcos~"),
-				(t_newmethod) smcos_new,
-				(t_method) smcos_free,
-				sizeof(t_smcos),
+void smitrain_tilde_setup() {
+	smitrain_class = class_new(gensym("smitrain~"),
+				(t_newmethod) smitrain_new,
+				(t_method) smitrain_free,
+				sizeof(t_smitrain),
 				CLASS_DEFAULT,
 				A_GIMME, A_NULL);
-	class_addmethod(smcos_class, (t_method) smcos_dsp, gensym("dsp"),
+	class_addmethod(smitrain_class,
+			(t_method) smitrain_dsp, gensym("dsp"),
 			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(smcos_class, t_smcos, zero); /* freq */
+	CLASS_MAINSIGNALIN(smitrain_class, t_smitrain, zero); /* freq */
 }
