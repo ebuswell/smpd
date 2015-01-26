@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/limiter.h>
+#include <sonicmaths/limit.h>
 #include "m_pd.h"
 
 typedef struct {

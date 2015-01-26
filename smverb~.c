@@ -27,7 +27,8 @@ typedef struct {
 
 t_class *smverb_class;
 
-static void *smverb_new(t_float echo_t, t_float echo_dev, t_float ntanks) {
+static void *smverb_new(t_floatarg echo_t, t_floatarg echo_dev,
+			t_floatarg ntanks) {
 	int r;
 	t_smverb *x = (t_smverb *) pd_new(smverb_class);
 	r = smverb_init(&x->verb,
@@ -72,7 +73,7 @@ void smverb_tilde_setup() {
 				(t_method) smverb_free,
 				sizeof(t_smverb),
 				CLASS_DEFAULT,
-				A_GIMME, A_NULL);
+				A_DEFFLOAT, A_DEFFLOAT, A_DEFFLOAT, A_NULL);
 	class_addmethod(smverb_class, (t_method) smverb_dsp, gensym("dsp"),
 			A_CANT, A_NULL);
 	CLASS_MAINSIGNALIN(smverb_class, t_smverb, zero); /* input */
