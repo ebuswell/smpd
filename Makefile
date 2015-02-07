@@ -2,11 +2,12 @@ LIBRARY_NAME = sonicmaths
 
 SOURCES = smbandpass~.c smcos~.c smdelay~.c smenvg~.c smhighpass~.c \
 	  smintg~.c sminv~.c smitrain~.c smkey~.c smlag~.c smlimit~.c \
-	  smlowpass~.c smnoise~.c smnotch~.c smverb~.c
+	  smlowpass~.c smnoise~.c smnotch~.c smquant~.c smsandh~.c \
+	  smshift~.c smverb~.c
 
 SHARED_SOURCES =
 
-PDOBJECTS =
+PDOBJECTS = smsaw~.pd smsquare~.pd smbola~.pd smtriangle~.pd
 
 # in the 'examples' subfolder
 EXAMPLES =

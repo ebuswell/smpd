@@ -30,6 +30,11 @@ t_class *smdelay_class;
 static void *smdelay_new(t_floatarg len) {
 	int r;
 	t_smdelay *x = (t_smdelay *) pd_new(smdelay_class);
+	if (len == 0.0f) {
+		len = 409600.0f;
+	} else if(len < 1.0f) {
+		len = 1.0f;
+	}
 	r = smdelay_init(&x->delay, (size_t) len);
 	if (r != 0) {
 		error("Could not initialize smdelay");
