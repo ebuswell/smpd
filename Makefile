@@ -7,7 +7,8 @@ SOURCES = smbandpass~.c smcos~.c smdelay~.c smenvg~.c smhighpass~.c \
 
 SHARED_SOURCES =
 
-PDOBJECTS = smsaw~.pd smsquare~.pd smbola~.pd smtriangle~.pd
+PDOBJECTS = smchorus~.pd smflange~.pd smsaw~.pd smsquare~.pd smbola~.pd \
+	    smtriangle~.pd
 
 # in the 'examples' subfolder
 EXAMPLES =
@@ -38,7 +39,7 @@ ALL_LIBS = -lm -lsonicmaths
 #------------------------------------------------------------------------------#
 
 # these can be set from outside without (usually) breaking the build
-CFLAGS = -Wall -W -g
+CFLAGS = -Wall -W
 LDFLAGS =
 LIBS =
 
