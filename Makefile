@@ -1,14 +1,12 @@
 LIBRARY_NAME = sonicmaths
 
-SOURCES = smbandpass~.c smcos~.c smdelay~.c smenvg~.c smhighpass~.c \
-	  smintg~.c sminv~.c smitrain~.c smkey~.c smlag~.c smlimit~.c \
-	  smlowpass~.c smnoise~.c smnotch~.c smquant~.c smsandh~.c \
-	  smshift~.c smverb~.c
-
+SOURCES = bp2~.c bs2~.c delay~.c diff~.c envg~.c f2n~.c fdmod~.c gaussian~.c \
+	  hp2~.c intg~.c itrain~.c key~.c lag~.c limit~.c lp2~.c n2f~.c \
+	  quant~.c sandh~.c shift~.c tapdelay~.c verb~.c xcos~.c
 SHARED_SOURCES =
 
-PDOBJECTS = smchorus~.pd smflange~.pd smsaw~.pd smsquare~.pd smbola~.pd \
-	    smtriangle~.pd
+PDOBJECTS = bola~.pd bp4~.pd bs4~.pd chorus~.pd flange~.pd hp4~.pd lp4~.pd \
+	    notein.pd pulse~.pd saw~.pd triangle~.pd
 
 # in the 'examples' subfolder
 EXAMPLES =
@@ -94,7 +92,7 @@ ifeq ($(UNAME),Darwin)
     SHARED_EXTENSION = dylib
     OS = macosx
     PD_PATH = /Applications/Pd-extended.app/Contents/Resources
-    OPT_CFLAGS = -ftree-vectorize -ftree-vectorizer-verbose=2 -fast
+    OPT_CFLAGS = -ftree-vectorize -fast
 # build universal 32-bit on 10.4 and 32/64 on newer
     ifeq ($(shell uname -r | sed 's|\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*|\1|'), 8)
       FAT_FLAGS = -arch ppc -arch i386 -mmacosx-version-min=10.4
