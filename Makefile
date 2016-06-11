@@ -1,12 +1,13 @@
 LIBRARY_NAME = sonicmaths
 
-SOURCES = bp2~.c bs2~.c delay~.c diff~.c envg~.c f2n~.c fdmod~.c gaussian~.c \
-	  hp2~.c intg~.c itrain~.c key~.c lag~.c limit~.c lp2~.c n2f~.c \
-	  quant~.c sandh~.c shift~.c tapdelay~.c verb~.c xcos~.c
+SOURCES = bp2~.c bp4~.c bp6~.c bp8~.c delay~.c diff~.c envg~.c envgl~.c \
+	  f2n~.c fdmod~.c gaussian~.c hp2~.c hp3~.c hp4~.c intg~.c inv~.c \
+	  itrain~.c key~.c lag~.c lage~.c limit~.c lp2~.c lp3~.c lp3res~.c \
+	  lp4~.c lp4res~.c n2f~.c normf.c normt.c quant~.c sandh~.c \
+	  tapdelay~.c verb~.c xcos~.c
 SHARED_SOURCES =
 
-PDOBJECTS = bola~.pd bp4~.pd bs4~.pd chorus~.pd flange~.pd hp4~.pd lp4~.pd \
-	    notein.pd pulse~.pd saw~.pd triangle~.pd
+PDOBJECTS = bola~.pd chorus~.pd flange~.pd pulse~.pd saw~.pd schorus~.pd xtriangle~.pd x6notein.pd
 
 # in the 'examples' subfolder
 EXAMPLES =

@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/envelope-generator.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -26,52 +27,61 @@ typedef struct {
 
 static t_class *envg_class;
 
-static void *envg_new(t_symbol *s __attribute__((unused)),
-			int argc, t_atom *argv) {
+smpdnew(envg) {
 	int r;
 	float attack_t, attack_a, decay_t, sustain_a, release_t, release_a;
-	if (argc == 0) {
-		attack_t = 0.0f;
-		attack_a = 1.0f;
-		decay_t = 0.0f;
+	if (argc >= 6) {
+		/* attack_t, attack_a, decay_t, sustain_a, release_t,
+		 * release_a */
+		if (argc > 6) {
+			error("envg~ takes 0, 2 (AR), 3 (ASR), 4 (ADSR), "
+			      "or 6 (AaDSRr) arguments");
+		}
+		attack_t  = smpdtimearg(0, 0.0f);
+		attack_a  = smpdfloatarg(1, 1.0f);
+		decay_t   = smpdtimearg(2, 0.0f);
+		sustain_a = smpdfloatarg(3, 1.0f);
+		release_t = smpdtimearg(4, 0.0f);
+		release_a = smpdfloatarg(5, 0.0f);
+	} else if (argc >= 4) {
+		/* Attack, decay, sustain, release */
+		if (argc > 4) {
+			error("envg~ takes 0, 2 (AR), 3 (ASR), 4 (ADSR), "
+			      "or 6 (AaDSRr) arguments");
+		}
+		attack_t  = smpdtimearg(0, 0.0f);
+		attack_a  = 1.0f;
+		decay_t   = smpdtimearg(1, 0.0f);
+		sustain_a = smpdfloatarg(2, 1.0f);
+		release_t = smpdtimearg(3, 0.0f);
+		release_a = 0.0f;
+	} else if (argc >= 3) {
+		/* Attack, decay/release, sustain */
+		attack_t  = smpdtimearg(0, 0.0f);
+		attack_a  = 1.0f;
+		decay_t   = smpdtimearg(1, 0.0f);
+		sustain_a = smpdfloatarg(2, 1.0f);
+		release_t = decay_t;
+		release_a = 0.0f;
+	} else if (argc >= 2) {
+		/* Attack, release */
+		attack_t  = smpdtimearg(0, 0.0f);
+		attack_a  = 1.0f;
+		decay_t   = 0.0f;
+		sustain_a = 1.0f;
+		release_t = smpdtimearg(1, 0.0f);
+		release_a = 0.0f;
+	} else {
+		if (argc > 0) {
+			error("envg~ takes 0, 2 (AR), 3 (ASR), 4 (ADSR), "
+			      "or 6 (AaDSRr) arguments");
+		}
+		attack_t  = 0.0f;
+		attack_a  = 1.0f;
+		decay_t   = 0.0f;
 		sustain_a = 1.0f;
 		release_t = 0.0f;
 		release_a = 0.0f;
-	} else if (argc == 2) {
-		/* Attack, release */
-		attack_t = atom_getfloat(argv+0);
-		attack_a = 1.0f;
-		decay_t = 0.0f;
-		sustain_a = 1.0f;
-		release_t = atom_getfloat(argv+1);
-		release_a = 0.0f;
-	} else if (argc == 3) {
-		/* Attack, decay/release, sustain */
-		attack_t = atom_getfloat(argv+0);
-		attack_a = 1.0f;
-		decay_t = release_t = atom_getfloat(argv+1);
-		sustain_a = atom_getfloat(argv+2);
-		release_a = 0.0f;
-	} else if (argc == 4) {
-		/* Attack, decay, sustain, release */
-		attack_t = atom_getfloat(argv+0);
-		attack_a = 1.0f;
-		decay_t = atom_getfloat(argv+1);
-		sustain_a = atom_getfloat(argv+2);
-		release_t = atom_getfloat(argv+3);
-		release_a = 0.0f;
-	} else if (argc == 6) {
-		/* attack_t, attack_a, decay_t, sustain_a, release_t,
-		 * release_a */
-		attack_t = atom_getfloat(argv+0);
-		attack_a = atom_getfloat(argv+1);
-		decay_t = atom_getfloat(argv+2);
-		sustain_a = atom_getfloat(argv+3);
-		release_t = atom_getfloat(argv+4);
-		release_a = atom_getfloat(argv+5);
-	} else {
-		error("envg~ takes 0, 2 (AR), 3 (ASR), 4 (ADSR), or 6 (AaDSRr) arguments");
-		return NULL;
 	}
 	t_envg *envg = (t_envg *) pd_new(envg_class);
 	r = smenvg_init(&envg->envg);
@@ -79,6 +89,7 @@ static void *envg_new(t_symbol *s __attribute__((unused)),
 		error("Could not initialize envg~");
 		return NULL;
 	}
+	outlet_new(&envg->o, &s_signal);
 	envg->x_f = 0.0f;
 	signalinlet_new(&envg->o, attack_t);
 	signalinlet_new(&envg->o, attack_a);
@@ -86,7 +97,6 @@ static void *envg_new(t_symbol *s __attribute__((unused)),
 	signalinlet_new(&envg->o, sustain_a);
 	signalinlet_new(&envg->o, release_t);
 	signalinlet_new(&envg->o, release_a);
-	outlet_new(&envg->o, &s_signal); /* out */
 	return envg;
 }
 
@@ -119,14 +129,4 @@ static void envg_dsp(t_envg *envg, t_signal **sp) {
 		sp[5]->s_vec, sp[6]->s_vec);
 }
 
-void envg_tilde_setup() {
-	envg_class = class_new(gensym("envg~"),
-			       (t_newmethod) envg_new,
-			       (t_method) envg_free,
-			       sizeof(t_envg),
-			       CLASS_DEFAULT,
-			       A_GIMME, A_NULL);
-	class_addmethod(envg_class, (t_method) envg_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(envg_class, t_envg, x_f);
-}
+smpddspclass(envg);

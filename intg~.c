@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/integrator.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -26,16 +27,17 @@ typedef struct {
 
 static t_class *intg_class;
 
-static void *intg_new() {
+smpdnew(intg) {
 	int r;
+	smpdnoargs();
 	t_intg *intg = (t_intg *) pd_new(intg_class);
 	r = smintg_init(&intg->intg);
 	if (r != 0) {
 		error("Could not initialize intg~");
 		return NULL;
 	}
+	outlet_new(&intg->o, &s_signal);
 	intg->x_f = 0.0f;
-	outlet_new(&intg->o, &s_signal); /* y */
 	return intg;
 }
 
@@ -59,13 +61,4 @@ static void intg_dsp(t_intg *intg, t_signal **sp) {
 		&intg->intg, sp[0]->s_n, sp[1]->s_vec, sp[0]->s_vec);
 }
 
-void intg_tilde_setup() {
-	intg_class = class_new(gensym("intg~"),
-			       (t_newmethod) intg_new,
-			       (t_method) intg_free,
-			       sizeof(t_intg),
-			       CLASS_DEFAULT, A_NULL);
-	class_addmethod(intg_class, (t_method) intg_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(intg_class, t_intg, x_f); /* x */
-}
+smpddspclass(intg);

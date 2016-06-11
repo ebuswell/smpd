@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/math.h>
-#include <sonicmaths/key.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -26,12 +26,19 @@ typedef struct {
 
 static t_class *f2n_class;
 
-static void *f2n_new() {
+smpdnew(f2n) {
+	float f, root;
+	root = smpdfreqarg(0, SMKEYF_C);
+	f = smpdfreqarg(1, SMKEYF_C);
 	t_f2n *f2n = (t_f2n *) pd_new(f2n_class);
-	f2n->x_f = 0.0f;
-	outlet_new(&f2n->o, &s_signal); /* note */
-	signalinlet_new(&f2n->o, smnormfv(sys_getsr(), SMKEYF_C)); /* root */
+	outlet_new(&f2n->o, &s_signal);
+	f2n->x_f = f;
+	signalinlet_new(&f2n->o, root);
 	return f2n;
+}
+
+static void f2n_free(t_f2n *f2n __attribute__((unused))) {
+	/* Do nothing */
 }
 
 static t_int *f2n_perform(t_int *w) {
@@ -51,13 +58,4 @@ static void f2n_dsp(t_f2n *f2n __attribute__((unused)),
 		sp[0]->s_n, sp[2]->s_vec, sp[0]->s_vec, sp[1]->s_vec);
 }
 
-void f2n_tilde_setup() {
-	f2n_class = class_new(gensym("f2n~"),
-			      (t_newmethod) f2n_new,
-			      NULL,
-			      sizeof(t_f2n),
-			      CLASS_DEFAULT, A_NULL);
-	class_addmethod(f2n_class, (t_method) f2n_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(f2n_class, t_f2n, x_f); /* freq */
-}
+smpddspclass(f2n);

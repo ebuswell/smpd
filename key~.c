@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/math.h>
-#include <sonicmaths/key.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -27,12 +27,14 @@ typedef struct {
 
 static t_class *key_class;
 
-static void *key_new(t_symbol *s __attribute__((unused)),
-		     int argc, t_atom *argv) {
+smpdnew(key) {
+	float n, root;
+	root = smpdfreqarg(1, SMKEYF_C);
+	n = smpdnotearg(2, 1, 0.0f);
 	t_key *key = (t_key *) pd_new(key_class);
 	key->key = SMKEY_EQUAL;
 	if (argc > 0) {
-		t_symbol *arg = atom_getsymbol(argv);
+		t_symbol *arg = atom_getsymbol(argv+0);
 		if (arg == gensym("harmonic")) {
 			key->key = SMKEY_HARMONIC;
 		} else if (arg == gensym("pythagorean")) {
@@ -40,15 +42,15 @@ static void *key_new(t_symbol *s __attribute__((unused)),
 		} else if (arg != gensym("equal")) {
 			error("Unknown key specified.");
 		}
-		if (argc > 1) {
-			error("key~ takes only one argument."
-			      " Ignoring subsequent arguments.");
-		}
 	}
-	key->x_f = 0.0f;
-	outlet_new(&key->o, &s_signal); /* freq */
-	signalinlet_new(&key->o, smnormfv(sys_getsr(), SMKEYF_C)); /* root */
+	outlet_new(&key->o, &s_signal);
+	key->x_f = n;
+	signalinlet_new(&key->o, root);
 	return key;
+}
+
+static void key_free(t_key *key __attribute__((unused))) {
+	/* Do nothing */
 }
 
 static t_int *key_perform(t_int *w) {
@@ -69,14 +71,4 @@ static void key_dsp(t_key *key, t_signal **sp) {
 		sp[2]->s_vec, sp[0]->s_vec, sp[1]->s_vec);
 }
 
-void key_tilde_setup() {
-	key_class = class_new(gensym("key~"),
-			      (t_newmethod) key_new,
-			      NULL,
-			      sizeof(t_key),
-			      CLASS_DEFAULT,
-			      A_GIMME, A_NULL);
-	class_addmethod(key_class, (t_method) key_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(key_class, t_key, x_f); /* note */
-}
+smpddspclass(key);

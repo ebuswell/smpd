@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/differentiator.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -26,16 +27,17 @@ typedef struct {
 
 static t_class *diff_class;
 
-static void *diff_new() {
+smpdnew(diff) {
 	int r;
+	smpdnoargs();
 	t_diff *diff = (t_diff *) pd_new(diff_class);
 	r = smdiff_init(&diff->diff);
 	if (r != 0) {
 		error("Could not initialize diff~");
 		return NULL;
 	}
+	outlet_new(&diff->o, &s_signal);
 	diff->x_f = 0.0f;
-	outlet_new(&diff->o, &s_signal); /* y */
 	return diff;
 }
 
@@ -59,13 +61,4 @@ static void diff_dsp(t_diff *diff, t_signal **sp) {
 		&diff->diff, sp[0]->s_n, sp[1]->s_vec, sp[0]->s_vec);
 }
 
-void diff_tilde_setup() {
-	diff_class = class_new(gensym("diff~"),
-			       (t_newmethod) diff_new,
-			       (t_method) diff_free,
-			       sizeof(t_diff),
-			       CLASS_DEFAULT, A_NULL);
-	class_addmethod(diff_class, (t_method) diff_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(diff_class, t_diff, x_f); /* x */
-}
+smpddspclass(diff);

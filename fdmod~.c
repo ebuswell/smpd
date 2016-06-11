@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/math.h>
-#include <sonicmaths/fdmodulator.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -27,23 +27,20 @@ typedef struct {
 
 static t_class *fdmod_class;
 
-static void *fdmod_new(t_floatarg maxnbanks) {
+smpdnew(fdmod) {
 	int r;
+	float bankwidth;
+	bankwidth = smpdtimearg(0, 10.0f);
 	t_fdmod *fdmod = (t_fdmod *) pd_new(fdmod_class);
-	if (maxnbanks == 0.0f) {
-		maxnbanks = (sys_getsr() / 2) / 10.0f;
-	} else if (maxnbanks < 2.0f) {
-		maxnbanks = 2.0f;
-	}
-	r = smfdmod_init(&fdmod->mod, maxnbanks);
+	r = smfdmod_init(&fdmod->mod, (int) ceilf(0.5f / bankwidth));
 	if (r != 0) {
 		error("Could not initialize fdmod~");
 		return NULL;
 	}
+	outlet_new(&fdmod->o, &s_signal);
 	fdmod->x_f = 0.0f;
-	outlet_new(&fdmod->o, &s_signal); /* y */
-	signalinlet_new(&fdmod->o, 0.0f); /* b */
-	signalinlet_new(&fdmod->o, smnormfv(sys_getsr(), 80.0f)); /* bankwidth */
+	signalinlet_new(&fdmod->o, 0.0f);
+	signalinlet_new(&fdmod->o, bankwidth);
 	return fdmod;
 }
 
@@ -70,14 +67,4 @@ static void fdmod_dsp(t_fdmod *fdmod, t_signal **sp) {
 		sp[3]->s_vec, sp[0]->s_vec, sp[1]->s_vec, sp[2]->s_vec);
 }
 
-void fdmod_tilde_setup() {
-	fdmod_class = class_new(gensym("fdmod~"),
-				(t_newmethod) fdmod_new,
-				(t_method) fdmod_free,
-				sizeof(t_fdmod),
-				CLASS_DEFAULT,
-				A_DEFFLOAT, A_NULL);
-	class_addmethod(fdmod_class, (t_method) fdmod_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(fdmod_class, t_fdmod, x_f); /* a */
-}
+smpddspclass(fdmod);

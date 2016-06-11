@@ -15,8 +15,10 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/reverb.h>
+#include <math.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -26,29 +28,31 @@ typedef struct {
 
 static t_class *verb_class;
 
-static void *verb_new(t_floatarg len, t_floatarg n) {
-	int r;
+smpdnew(verb) {
+	int n, r, maxlen;
+	float len, tdev, g;
+	n = (int) smpdfloatarg(0, 32.0f);
+	if (n < 1) {
+		n = 1;
+	}
+	len = smpdtimearg(1, 10.0f);
+	tdev = smpdtimearg(2, 0.1f);
+	g = smpdfloatarg(3, 0.85f);
+	maxlen = ceilf(len + 5.0f * tdev);
+       	if (maxlen < 1) {
+		maxlen = 1;
+	}
 	t_verb *verb = (t_verb *) pd_new(verb_class);
-	if (len == 0.0f) {
-		len = 409600.0f;
-	} else if(len < 1.0f) {
-		len = 1.0f;
-	}
-	if (n == 0.0f) {
-		n = 32.0f;
-	} else if (n < 1.0f) {
-		n = 1.0f;
-	}
-	r = smverb_init(&verb->verb, (int) len, (int) n);
+	r = smverb_init(&verb->verb, maxlen, (int) n);
 	if (r != 0) {
 		error("Could not initialize smverb");
 		return NULL;
 	}
+	outlet_new(&verb->o, &s_signal);
 	verb->x_f = 0.0f;
-	outlet_new(&verb->o, &s_signal); /* y */
-	signalinlet_new(&verb->o, len / 2); /* t */
-	signalinlet_new(&verb->o, len / 16); /* tdev */
-	signalinlet_new(&verb->o, 0.5f); /* g */
+	signalinlet_new(&verb->o, len);
+	signalinlet_new(&verb->o, tdev);
+	signalinlet_new(&verb->o, g);
 	return verb;
 }
 
@@ -77,14 +81,4 @@ static void verb_dsp(t_verb *verb, t_signal **sp) {
 		sp[2]->s_vec, sp[3]->s_vec);
 }
 
-void verb_tilde_setup() {
-	verb_class = class_new(gensym("verb~"),
-			       (t_newmethod) verb_new,
-			       (t_method) verb_free,
-			       sizeof(t_verb),
-			       CLASS_DEFAULT,
-			       A_DEFFLOAT, A_DEFFLOAT, A_NULL);
-	class_addmethod(verb_class, (t_method) verb_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(verb_class, t_verb, x_f); /* x */
-}
+smpddspclass(verb);

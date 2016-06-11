@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/shifter.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -26,17 +27,19 @@ typedef struct {
 
 static t_class *shift_class;
 
-static void *shift_new() {
+smpdnew(shift) {
 	int r;
+	float f;
+	f = smpdfreqarg(0, 0.0f);
 	t_shift *shift = (t_shift *) pd_new(shift_class);
 	r = smshift_init(&shift->shift);
 	if (r != 0) {
 		error("Could not initialize shift~");
 		return NULL;
 	}
+	outlet_new(&shift->o, &s_signal);
 	shift->x_f = 0.0f;
-	outlet_new(&shift->o, &s_signal); /* y */
-	signalinlet_new(&shift->o, 0.0f); /* f */
+	signalinlet_new(&shift->o, f);
 	return shift;
 }
 
@@ -62,13 +65,4 @@ static void shift_dsp(t_shift *shift, t_signal **sp) {
 		sp[2]->s_vec, sp[0]->s_vec, sp[1]->s_vec);
 }
 
-void shift_tilde_setup() {
-	shift_class = class_new(gensym("shift~"),
-				(t_newmethod) shift_new,
-				(t_method) shift_free,
-				sizeof(t_shift),
-				CLASS_DEFAULT, A_NULL);
-	class_addmethod(shift_class, (t_method) shift_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(shift_class, t_shift, x_f); /* x */
-}
+smpddspclass(shift);

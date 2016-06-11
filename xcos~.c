@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/oscillator.h>
-#include <sonicmaths/cosine.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -27,25 +27,22 @@ typedef struct {
 
 static t_class *xcos_class;
 
-static void *xcos_new(t_symbol *s __attribute__((unused)),
-		      int argc, t_atom *argv) {
+smpdnew(xcos) {
 	int r;
+	float f;
+	f = smpdfreqarg(0, SMKEYF_C);
 	t_xcos *xcos = (t_xcos *) pd_new(xcos_class);
 	r = smosc_init(&xcos->osc);
 	if (r != 0) {
 		error("Could not initialize xcos~");
 		return NULL;
 	}
-	if (argc > 0) {
-		smosc_set_phase(&xcos->osc, (double) atom_getfloat(argv));
-		if (argc > 1) {
-			error("xcos~ takes only one argument."
-			      " Ignoring subsequent arguments.");
-		}
+	if (argc < 1 && atom_type(argv+1) == A_FLOAT) {
+		smosc_set_phase(&xcos->osc, (double) atom_getfloat(argv+1));
 	}
-	xcos->x_f = 0.0f;
-	outlet_new(&xcos->o, &s_signal); /* y */
-	signalinlet_new(&xcos->o, 0.0f); /* phase */
+	outlet_new(&xcos->o, &s_signal);
+	xcos->x_f = f;
+	signalinlet_new(&xcos->o, 0.0f);
 	return xcos;
 }
 
@@ -71,14 +68,4 @@ static void xcos_dsp(t_xcos *xcos, t_signal **sp) {
 		sp[2]->s_vec, sp[0]->s_vec, sp[1]->s_vec);
 }
 
-void xcos_tilde_setup() {
-	xcos_class = class_new(gensym("xcos~"),
-			       (t_newmethod) xcos_new,
-			       (t_method) xcos_free,
-			       sizeof(t_xcos),
-			       CLASS_DEFAULT,
-			       A_GIMME, A_NULL);
-	class_addmethod(xcos_class, (t_method) xcos_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(xcos_class, t_xcos, x_f); /* freq */
-}
+smpddspclass(xcos);

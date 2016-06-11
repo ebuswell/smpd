@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/delay.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -26,22 +27,23 @@ typedef struct {
 
 static t_class *delay_class;
 
-static void *delay_new(t_floatarg len) {
-	int r;
-	t_delay *delay = (t_delay *) pd_new(delay_class);
-	if (len == 0.0f) {
-		len = 409600.0f;
-	} else if(len < 1.0f) {
-		len = 1.0f;
+smpdnew(delay) {
+	int r, len;
+	float t;
+	t = smpdtimearg(0, 10.0f);
+	len = (int) ceilf(t);
+	if (len < 1) {
+		len = 1;
 	}
-	r = smdelay_init(&delay->delay, (size_t) len);
+	t_delay *delay = (t_delay *) pd_new(delay_class);
+	r = smdelay_init(&delay->delay, len);
 	if (r != 0) {
 		error("Could not initialize delay~");
 		return NULL;
 	}
-	delay->x_f = 0.0f;
 	outlet_new(&delay->o, &s_signal);
-	signalinlet_new(&delay->o, 0.0f); /* t */
+	delay->x_f = 0.0f;
+	signalinlet_new(&delay->o, t);
 	return delay;
 }
 
@@ -67,14 +69,4 @@ static void delay_dsp(t_delay *delay, t_signal **sp) {
 		sp[2]->s_vec, sp[0]->s_vec, sp[1]->s_vec);
 }
 
-void delay_tilde_setup() {
-	delay_class = class_new(gensym("delay~"),
-				(t_newmethod) delay_new,
-				(t_method) delay_free,
-				sizeof(t_delay),
-				CLASS_DEFAULT,
-				A_DEFFLOAT, A_NULL);
-	class_addmethod(delay_class, (t_method) delay_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(delay_class, t_delay, x_f); /* x */
-}
+smpddspclass(delay);

@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/lag.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -26,17 +27,19 @@ typedef struct {
 
 static t_class *lag_class;
 
-static void *lag_new(t_symbol *s __attribute__((unused))) {
+smpdnew(lag) {
 	int r;
+	float t;
+	t = smpdtimearg(0, 0.0f);
 	t_lag *lag = (t_lag *) pd_new(lag_class);
 	r = smlag_init(&lag->lag);
 	if (r != 0) {
 		error("Could not initialize lag~");
 		return NULL;
 	}
+	outlet_new(&lag->o, &s_signal);
 	lag->x_f = 0.0f;
-	outlet_new(&lag->o, &s_signal); /* y */
-	signalinlet_new(&lag->o, 0.0f); /* t */
+	signalinlet_new(&lag->o, t);
 	return lag;
 }
 
@@ -62,13 +65,4 @@ static void lag_dsp(t_lag *lag, t_signal **sp) {
 		sp[2]->s_vec, sp[0]->s_vec, sp[1]->s_vec);
 }
 
-void lag_tilde_setup() {
-	lag_class = class_new(gensym("lag~"),
-			      (t_newmethod) lag_new,
-			      (t_method) lag_free,
-			      sizeof(t_lag),
-			      CLASS_DEFAULT, A_NULL);
-	class_addmethod(lag_class, (t_method) lag_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(lag_class, t_lag, x_f); /* input */
-}
+smpddspclass(lag);

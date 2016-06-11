@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/math.h>
-#include <sonicmaths/key.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -26,12 +26,20 @@ typedef struct {
 
 static t_class *n2f_class;
 
-static void *n2f_new() {
+smpdnew(n2f) {
+	float root;
+	float n;
+	root = smpdfreqarg(0, SMKEYF_C);
+	n = smpdnotearg(1, 0, 0.0f);
 	t_n2f *n2f = (t_n2f *) pd_new(n2f_class);
-	n2f->x_f = 0.0f;
-	outlet_new(&n2f->o, &s_signal); /* freq */
-	signalinlet_new(&n2f->o, smnormfv(sys_getsr(), SMKEYF_C)); /* root */
+	outlet_new(&n2f->o, &s_signal);
+	n2f->x_f = n;
+	signalinlet_new(&n2f->o, root);
 	return n2f;
+}
+
+static void n2f_free(t_n2f *n2f __attribute__((unused))) {
+	/* Do nothing */
 }
 
 static t_int *n2f_perform(t_int *w) {
@@ -51,13 +59,4 @@ static void n2f_dsp(t_n2f *n2f __attribute__((unused)),
 		sp[0]->s_n, sp[2]->s_vec, sp[0]->s_vec, sp[1]->s_vec);
 }
 
-void n2f_tilde_setup() {
-	n2f_class = class_new(gensym("n2f~"),
-			      (t_newmethod) n2f_new,
-			      NULL,
-			      sizeof(t_n2f),
-			      CLASS_DEFAULT, A_NULL);
-	class_addmethod(n2f_class, (t_method) n2f_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(n2f_class, t_n2f, x_f); /* note */
-}
+smpddspclass(n2f);

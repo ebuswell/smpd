@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/quantize.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -25,12 +26,18 @@ typedef struct {
 
 static t_class *quant_class;
 
-static void *quant_new() {
+smpdnew(quant) {
+	float i;
+	i = smpdfloatarg(0, 1.0f);
 	t_quant *quant = (t_quant *) pd_new(quant_class);
+	outlet_new(&quant->o, &s_signal);
 	quant->x_f = 0.0f;
-	outlet_new(&quant->o, &s_signal); /* y */
-	signalinlet_new(&quant->o, 2.0f); /* i */
+	signalinlet_new(&quant->o, i);
 	return quant;
+}
+
+static void quant_free(t_quant *quant __attribute__((unused))) {
+	/* Do nothing */
 }
 
 static t_int *quant_perform(t_int *w) {
@@ -49,13 +56,4 @@ static void quant_dsp(t_quant *quant __attribute__((unused)), t_signal **sp) {
 		sp[0]->s_n, sp[2]->s_vec, sp[0]->s_vec, sp[1]->s_vec);
 }
 
-void quant_tilde_setup() {
-	quant_class = class_new(gensym("quant~"),
-				(t_newmethod) quant_new,
-				NULL,
-				sizeof(t_quant),
-				CLASS_DEFAULT, A_NULL);
-	class_addmethod(quant_class, (t_method) quant_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(quant_class, t_quant, x_f); /* x */
-}
+smpddspclass(quant);

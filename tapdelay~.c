@@ -16,8 +16,10 @@
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdlib.h>
-#include <sonicmaths/delay.h>
+#include <math.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -30,40 +32,55 @@ typedef struct {
 
 static t_class *tapdelay_class;
 
-static void *tapdelay_new(t_floatarg ntaps, t_floatarg len) {
-	int i, r;
+smpdnew(tapdelay) {
+	int i, r, ntaps;
+	float maxlen, len;
+	ntaps = (int) smpdfloatarg(0, 1.0f);
+	if (argc > (ntaps + 1)) {
+		/* maxlen specified separately */
+		maxlen = smpdtimearg(1, 10.0f);
+		argv += 2;
+		argc -= 2;
+	} else {
+		/* maxlen is max(all the lengths) */
+		argv += 1;
+		argc -= 1;
+		maxlen = 0.0f;
+		for (i = 0; i < ntaps; i++) {
+			len = smpdtimearg(i, 10.0f);
+			if (len > maxlen) {
+				maxlen = len;
+			}
+		}
+	}
+	maxlen = ceilf(maxlen);
+	if (maxlen < 1) {
+		maxlen = 1;
+	}
 	t_tapdelay *tapdelay = (t_tapdelay *) pd_new(tapdelay_class);
-	if (ntaps < 1.0f) {
-		ntaps = 1.0f;
-	}
-	if (len == 0.0f) {
-		len = 409600.0f;
-	} else if(len < 1.0f) {
-		len = 1.0f;
-	}
-	r = smdelay_init(&tapdelay->delay, (size_t) len);
+	r = smdelay_init(&tapdelay->delay, (int) maxlen);
 	if (r != 0) {
 		error("Could not initialize tapdelay~");
 		return NULL;
 	}
 	tapdelay->x_f = 0.0f;
-	tapdelay->ntaps = (int) ntaps;
-	tapdelay->y = malloc(sizeof(float *) * tapdelay->ntaps);
+	tapdelay->ntaps = ntaps;
+	tapdelay->y = malloc(sizeof(float *) * ntaps);
 	if (tapdelay->y == NULL) {
 		smdelay_destroy(&tapdelay->delay);
 		error("Could not initialize tapdelay~: malloc failed");
 		return NULL;
 	}
-	tapdelay->t = malloc(sizeof(float *) * tapdelay->ntaps);
+	tapdelay->t = malloc(sizeof(float *) * ntaps);
 	if (tapdelay->t == NULL) {
 		free(tapdelay->y);
 		smdelay_destroy(&tapdelay->delay);
 		error("Could not initialize tapdelay~: malloc failed");
 		return NULL;
 	}
-	for (i = 0; i < tapdelay->ntaps; i++) {
+	for (i = 0; i < ntaps; i++) {
 		outlet_new(&tapdelay->o, &s_signal);
-		signalinlet_new(&tapdelay->o, 0.0f); /* t */
+		signalinlet_new(&tapdelay->o, smpdtimearg(i, 10.0f));
 	}
 	return tapdelay;
 }
@@ -104,7 +121,7 @@ void tapdelay_tilde_setup() {
 				   (t_method) tapdelay_free,
 				   sizeof(t_tapdelay),
 				   CLASS_DEFAULT,
-				   A_DEFFLOAT, A_DEFFLOAT, A_NULL);
+				   A_GIMME, A_NULL);
 	class_addmethod(tapdelay_class, (t_method) tapdelay_dsp, gensym("dsp"),
 			A_CANT, A_NULL);
 	CLASS_MAINSIGNALIN(tapdelay_class, t_tapdelay, x_f); /* input */

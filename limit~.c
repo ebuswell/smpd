@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/limit.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -26,12 +27,13 @@ typedef struct {
 
 static t_class *limit_class;
 
-static void *limit_new(t_symbol *s __attribute__((unused)),
-		       int argc, t_atom *argv) {
+smpdnew(limit) {
+	float sharpness;
+       	sharpness = smpdfloatarg(1, 2.0f);
 	t_limit *limit = (t_limit *) pd_new(limit_class);
 	limit->kind = SMLIMIT_EXP;
 	if (argc > 0) {
-		t_symbol *arg = atom_getsymbol(argv);
+		t_symbol *arg = atom_getsymbol(argv+0);
 		if (arg == gensym("hyp")
 		    || arg == gensym("hyperbolic")) {
 			limit->kind = SMLIMIT_HYP;
@@ -43,15 +45,15 @@ static void *limit_new(t_symbol *s __attribute__((unused)),
 			   && arg != gensym("exponential")) {
 			error("Unknown limit kind specified.");
 		}
-		if (argc > 1) {
-			error("key~ takes only one argument."
-			      " Ignoring subsequent arguments.");
-		}
 	}
+	outlet_new(&limit->o, &s_signal);
 	limit->x_f = 0.0f;
-	outlet_new(&limit->o, &s_signal); /* y */
-	signalinlet_new(&limit->o, 2.0f); /* sharpness */
+	signalinlet_new(&limit->o, sharpness);
 	return limit;
+}
+
+static void limit_free(t_limit *limit __attribute__((unused))) {
+	/* Do nothing */
 }
 
 static t_int *limit_perform(t_int *w) {
@@ -72,14 +74,4 @@ static void limit_dsp(t_limit *limit, t_signal **sp) {
 		sp[2]->s_vec, sp[0]->s_vec, sp[1]->s_vec);
 }
 
-void limit_tilde_setup() {
-	limit_class = class_new(gensym("limit~"),
-				(t_newmethod) limit_new,
-				NULL,
-				sizeof(t_limit),
-				CLASS_DEFAULT,
-				A_GIMME, A_NULL);
-	class_addmethod(limit_class, (t_method) limit_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(limit_class, t_limit, x_f); /* x */
-}
+smpddspclass(limit);

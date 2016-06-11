@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU General Public License along
  * with smpd.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sonicmaths/oscillator.h>
-#include <sonicmaths/impulse-train.h>
+#include <sonicmaths.h>
 #include "m_pd.h"
+#include "common.h"
 
 typedef struct {
 	t_object o;
@@ -27,25 +27,22 @@ typedef struct {
 
 static t_class *itrain_class;
 
-static void *itrain_new(t_symbol *s __attribute__((unused)),
-			int argc, t_atom *argv) {
+smpdnew(itrain) {
 	int r;
+	float f;
+	f = smpdfreqarg(0, 0.0f);
 	t_itrain *itrain = (t_itrain *) pd_new(itrain_class);
 	r = smosc_init(&itrain->osc);
 	if (r != 0) {
 		error("Could not initialize itrain~");
 		return NULL;
 	}
-	if (argc > 0) {
-		smosc_set_phase(&itrain->osc, (double) atom_getfloat(argv));
-		if (argc > 1) {
-			error("itrain~ takes only one argument."
-			      " Ignoring subsequent arguments.");
-		}
+	if (argc > 1 && atom_type(argv+1) == A_FLOAT) {
+		smosc_set_phase(&itrain->osc, (double) atom_getfloat(argv+1));
 	}
-	itrain->x_f = 0.0f;
-	outlet_new(&itrain->o, &s_signal); /* y */
-	signalinlet_new(&itrain->o, 0.0f); /* phase */
+	outlet_new(&itrain->o, &s_signal);
+	itrain->x_f = f;
+	signalinlet_new(&itrain->o, 0.0f);
 	return itrain;
 }
 
@@ -71,15 +68,4 @@ static void itrain_dsp(t_itrain *itrain, t_signal **sp) {
 		sp[2]->s_vec, sp[0]->s_vec, sp[1]->s_vec);
 }
 
-void itrain_tilde_setup() {
-	itrain_class = class_new(gensym("itrain~"),
-				 (t_newmethod) itrain_new,
-				 (t_method) itrain_free,
-				 sizeof(t_itrain),
-				 CLASS_DEFAULT,
-				 A_GIMME, A_NULL);
-	class_addmethod(itrain_class,
-			(t_method) itrain_dsp, gensym("dsp"),
-			A_CANT, A_NULL);
-	CLASS_MAINSIGNALIN(itrain_class, t_itrain, x_f); /* freq */
-}
+smpddspclass(itrain);
